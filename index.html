@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portlaoise College School Calendar</title>
+    <!--
+        Tailwind CSS for modern, responsive styling.
+        The URL has been corrected to ensure it loads properly from a CDN.
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /*
+            Google Fonts for the 'Inter' typeface, which provides a clean, modern look.
+            The URL has been corrected to load correctly.
+        */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        /* Custom scrollbar for the event list to improve aesthetics */
+        .event-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .event-list-container::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            border-radius: 10px;
+        }
+        .event-list-container::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 10px;
+        }
+        .event-list-container::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        /* Media query for print view to hide non-essential elements */
+        @media print {
+            body { background-color: white; }
+            .no-print { display: none; }
+            .print-container { width: 100%; max-width: none; box-shadow: none; padding: 0; }
+            .calendar-grid-print { grid-template-columns: repeat(7, 1fr); gap: 0.5rem; }
+            .calendar-grid-print > div { border: 1px solid #e5e7eb; padding: 0.5rem; }
+            h1, h2 { text-align: center; }
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-xl print-container">
+
+        <!-- Main Header -->
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-2 text-indigo-800">Portlaoise College</h1>
+        <h2 class="text-xl sm:text-2xl text-center mb-8 font-semibold text-gray-700">School Calendar 2025-2026</h2>
+
+        <!-- Calendar and Event List Container -->
+        <div class="flex flex-col md:flex-row gap-8">
+
+            <!-- Left side: Calendar Grid -->
+            <div class="w-full md:w-2/3">
+                <div class="flex justify-between items-center mb-4 no-print">
+                    <button id="prevMonth" class="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <h3 id="currentMonthYear" class="text-xl sm:text-2xl font-semibold text-indigo-900"></h3>
+                    <button id="nextMonth" class="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Button to generate the printable view -->
+                <div class="flex justify-center mb-4 no-print">
+                    <button id="printBtn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-indigo-700 transition-colors duration-200">
+                        Printable View
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-7 text-center text-sm sm:text-base font-medium text-gray-500 mb-2">
+                    <div class="p-2">Sun</div>
+                    <div class="p-2">Mon</div>
+                    <div class="p-2">Tue</div>
+                    <div class="p-2">Wed</div>
+                    <div class="p-2">Thu</div>
+                    <div class="p-2">Fri</div>
+                    <div class="p-2">Sat</div>
+                </div>
+
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1 text-center calendar-grid-print">
+                    <!-- Calendar cells are dynamically populated here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Right side: Event List -->
+            <div class="w-full md:w-1/3 p-4 bg-indigo-50 rounded-xl shadow-inner no-print">
+                <h3 class="text-lg sm:text-xl font-semibold mb-4 text-indigo-800">Events for <span id="eventDateDisplay"></span></h3>
+                <div id="eventList" class="event-list-container h-64 overflow-y-auto pr-2">
+                    <p class="text-gray-500">Select a date to see events.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Event Data ---
+            // A structured array of all events, organized by date.
+            const events = [
+                // August 2025
+                { date: '2025-08-21', event: 'Staff Planning Day - no students' },
+                { date: '2025-08-22', event: '1st Years return' },
+                { date: '2025-08-25', event: '3rd, 6th and LCA2 return' },
+                { date: '2025-08-26', event: '2nd, 5th and LCA1 return' },
+                { date: '2025-08-27', event: 'TY return. LCA Working Together Workshop In-Person' },
+                // September 2025
+                { date: '2025-09-01', event: 'TY Working Together Workshop In Person' },
+                { date: '2025-09-02', event: 'Staff Meeting 4-6' },
+                { date: '2025-09-05', event: 'School Commencement Activity' },
+                { date: '2025-09-08', event: 'CAO Study Conference' },
+                { date: '2025-09-08', event: 'First Year Bonding Trips' },
+                { date: '2025-09-09', event: '2nd year "Working Together Workshop online"' },
+                { date: '2025-09-09', event: 'First Year Bonding Trips' },
+                { date: '2025-09-10', event: 'First Year Bonding Trips' },
+                { date: '2025-09-11', event: 'First Year Bonding Trips' },
+                { date: '2025-09-15', event: 'Board Of Management Meeting 17:30' },
+                { date: '2025-09-16', event: 'Student Activity Day' },
+                { date: '2025-09-17', event: '5th Year "Working Together Workshop" In-Person' },
+                { date: '2025-09-22', event: 'Open Night' },
+                { date: '2025-09-25', event: 'Open Night' },
+                // October 2025
+                { date: '2025-10-01', event: 'Applications for 1st Years Open for 26/27' },
+                { date: '2025-10-03', event: 'Staff Planning Day. School Closed' },
+                { date: '2025-10-10', event: 'Parents\' Council Meeting 18:30' },
+                { date: '2025-10-13', event: 'Second Year Parent/Teacher Meeting 16:15-18:45' },
+                { date: '2025-10-13', event: '"Maths Week"' },
+                { date: '2025-10-14', event: 'AEN Parent & Teacher Week' },
+                { date: '2025-10-14', event: '"Maths Week"' },
+                { date: '2025-10-15', event: '"Intercultural Day"' },
+                { date: '2025-10-15', event: '"Maths Week"' },
+                { date: '2025-10-16', event: '"Maths Week"' },
+                { date: '2025-10-17', event: '"Maths Week"' },
+                { date: '2025-10-21', event: '1st Year "Working Together Workshop"' },
+                { date: '2025-10-22', event: 'LOETB Maths Competition' },
+                { date: '2025-10-23', event: '3rd Year "Working Together Workshop" in person' },
+                { date: '2025-10-24', event: 'STAR Awards (organised by Prefects)' },
+                { date: '2025-10-24', event: 'First Year Celebration (Organised by Meitheal leaders)' },
+                { date: '2025-10-27', event: 'Mid Term Break' },
+                { date: '2025-10-28', event: 'Mid Term Break' },
+                { date: '2025-10-29', event: 'Mid Term Break' },
+                { date: '2025-10-30', event: 'Mid Term Break' },
+                { date: '2025-10-31', event: 'Mid Term Break' },
+                // November 2025
+                { date: '2025-11-03', event: '"Geography Week"' },
+                { date: '2025-11-04', event: '"Geography Week"' },
+                { date: '2025-11-05', event: '"Geography Week"' },
+                { date: '2025-11-06', event: '"Geography Week"' },
+                { date: '2025-11-07', event: '"Geography Week"' },
+                { date: '2025-11-10', event: 'Board Of Management Meeting 17:30' },
+                { date: '2025-11-10', event: '"Anti-Bullying Week"' },
+                { date: '2025-11-11', event: 'No School OIDE Day. Parent\'s Council Meeting 18:30' },
+                { date: '2025-11-11', event: '"Anti-Bullying Week"' },
+                { date: '2025-11-12', event: '"Anti-Bullying Week"' },
+                { date: '2025-11-13', event: '"Anti-Bullying Week"' },
+                { date: '2025-11-14', event: '"Anti-Bullying Week"' },
+                { date: '2025-11-18', event: 'LOETB All Stars' },
+                { date: '2025-11-20', event: 'When School Classroom Based Exams & TY Work experience' },
+                { date: '2025-11-24', event: '"College Awareness Week"' },
+                { date: '2025-11-25', event: '"College Awareness Week"' },
+                { date: '2025-11-26', event: '6th Year "Working Together Workshop" in person' },
+                { date: '2025-11-26', event: '"College Awareness Week"' },
+                { date: '2025-11-27', event: 'STEAM Conference for Parents/Children 4th & 5th class Primary 6-8pm' },
+                { date: '2025-11-27', event: '"College Awareness Week"' },
+                { date: '2025-11-28', event: '"College Awareness Week"' },
+                // December 2025
+                { date: '2025-12-08', event: '10 Days of Christmas Wellbeing' },
+                { date: '2025-12-08', event: 'Review Week for 2nd, 3rd, 5th and 6th years' },
+                { date: '2025-12-09', event: '"Christmas Markets" & Parent\'s Council Meeting 18:30' },
+                { date: '2025-12-10', event: '3rd Year Parent/Teacher Meeting 16:15-18:45' },
+                { date: '2025-12-15', event: 'No School. OIDE Training Day' },
+                { date: '2025-12-18', event: 'STAR Awards (organised by Prefects)' },
+                { date: '2025-12-19', event: 'Christmas Holidays' },
+                { date: '2025-12-20', event: 'Christmas Holidays' },
+                { date: '2025-12-21', event: 'Christmas Holidays' },
+                { date: '2025-12-22', event: 'Christmas Holidays' },
+                { date: '2025-12-23', event: 'Christmas Holidays' },
+                { date: '2025-12-24', event: 'Christmas Holidays' },
+                { date: '2025-12-25', event: 'Christmas Holidays' },
+                { date: '2025-12-26', event: 'Christmas Holidays' },
+                { date: '2025-12-27', event: 'Christmas Holidays' },
+                { date: '2025-12-28', event: 'Christmas Holidays' },
+                { date: '2025-12-29', event: 'Christmas Holidays' },
+                { date: '2025-12-30', event: 'Christmas Holidays' },
+                { date: '2025-12-31', event: 'Christmas Holidays' },
+                // January 2026
+                { date: '2026-01-05', event: 'First school day after Christmas Holidays' },
+                { date: '2026-01-07', event: 'Incoming First Years Information Evening' },
+                { date: '2026-01-08', event: 'Staff Meeting 4-6' },
+                { date: '2026-01-12', event: 'Incoming 1st Years Aptitude Exams' },
+                { date: '2026-01-12', event: 'Board of Management Meeting 5:30pm' },
+                { date: '2026-01-13', event: 'Parent\'s Council Meeting 7:30' },
+                { date: '2026-01-14', event: '6th/LCA 2 Parent/Teacher Meeting 16:15-18:45' },
+                // February 2026
+                { date: '2026-02-03', event: 'JC & LC Mock Exams & Week 20 Exams' },
+                { date: '2026-02-03', event: 'School Show' },
+                { date: '2026-02-04', event: 'JC & LC Mock Exams & Week 20 Exams' },
+                { date: '2026-02-04', event: 'School Show' },
+                { date: '2026-02-05', event: 'JC & LC Mock Exams & Week 20 Exams' },
+                { date: '2026-02-05', event: 'School Show' },
+                { date: '2026-02-09', event: 'TY Work Experience' },
+                { date: '2026-02-12', event: 'No School OIDE Training Day' },
+                { date: '2026-02-17', event: 'Mid Term Break' },
+                { date: '2026-02-18', event: 'Mid Term Break' },
+                { date: '2026-02-19', event: 'Mid Term Break' },
+                { date: '2026-02-20', event: 'Mid Term Break' },
+                { date: '2026-02-21', event: 'Mid Term Break' },
+                { date: '2026-02-25', event: 'Incoming Scholarship Exam 17:00' },
+                { date: '2026-02-26', event: 'Senior Cycle Options Night: LOETB All-Stars' },
+                // March 2026
+                { date: '2026-03-02', event: 'Board of Management Meeting 17:30' },
+                { date: '2026-03-09', event: '"Seachtain Na Gaeilge"' },
+                { date: '2026-03-10', event: '1st Year Parent/Teacher Meeting 16:15-18:45' },
+                { date: '2026-03-16', event: 'March School closed' },
+                { date: '2026-03-17', event: 'March School closed' },
+                { date: '2026-03-18', event: 'LCA1/5th Year Parent/Teacher Meeting 16:15-18:45' },
+                { date: '2026-03-19', event: 'STAR Awards (organised by Prefects)' },
+                { date: '2026-03-30', event: 'Easter Holidays' },
+                // April 2026
+                { date: '2026-04-01', event: 'Easter Holidays' },
+                { date: '2026-04-02', event: 'Easter Holidays' },
+                { date: '2026-04-02', event: '"World Autism Day"' },
+                { date: '2026-04-03', event: 'Easter Holidays' },
+                { date: '2026-04-06', event: 'Easter Holidays' },
+                { date: '2026-04-07', event: 'Easter Holidays' },
+                { date: '2026-04-08', event: 'Easter Holidays' },
+                { date: '2026-04-09', event: 'Easter Holidays' },
+                { date: '2026-04-10', event: 'Easter Holidays' },
+                { date: '2026-04-13', event: 'Review week 1st, 2nd, 3rd, 5th and 6th years' },
+                { date: '2026-04-14', event: 'Parent\'s Council Meeting 18:30' },
+                { date: '2026-04-30', event: 'LOETB All Stars' },
+                // May 2026
+                { date: '2026-05-05', event: 'BOM Meeting 17:30' },
+                { date: '2026-05-06', event: 'Staff Meeting 16:00-18:00' },
+                { date: '2026-05-11', event: 'Week of Excellence Awards' },
+                { date: '2026-05-12', event: 'Parents\' Council Meeting 18:30' },
+                { date: '2026-05-14', event: 'Evening of Excellence' },
+                { date: '2026-05-19', event: 'TY Graduation' },
+                { date: '2026-05-21', event: '6th Year Graduation' },
+                { date: '2026-05-25', event: '1st, 2nd & 5th Year Exams' },
+                { date: '2026-05-29', event: 'Summer Holidays' },
+                // June 2026
+                { date: '2026-06-03', event: 'Leaving & Junior Cert Exams commence' },
+                { date: '2026-06-08', event: 'BOM Meeting 17:30' }
+            ].map(e => ({
+                ...e,
+                date: new Date(e.date + 'T00:00:00') // Add time to avoid timezone issues
+            }));
+
+            // --- DOM Element References ---
+            const calendarGrid = document.getElementById('calendarGrid');
+            const currentMonthYear = document.getElementById('currentMonthYear');
+            const prevMonthBtn = document.getElementById('prevMonth');
+            const nextMonthBtn = document.getElementById('nextMonth');
+            const eventListEl = document.getElementById('eventList');
+            const eventDateDisplay = document.getElementById('eventDateDisplay');
+            const printBtn = document.getElementById('printBtn');
+
+            // --- State Variables ---
+            let today = new Date();
+            let currentMonth = today.getMonth();
+            let currentYear = today.getFullYear();
+
+            // --- Helper Functions ---
+            const getMonthName = (month) => {
+                return new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(currentYear, month));
+            };
+
+            const getDayName = (day) => {
+                return new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date(currentYear, currentMonth, day));
+            };
+
+            const getDaysInMonth = (month, year) => {
+                return new Date(year, month + 1, 0).getDate();
+            };
+
+            const getFirstDayOfMonth = (month, year) => {
+                return new Date(year, month, 1).getDay();
+            };
+
+            // --- Core Functions ---
+            const renderCalendar = () => {
+                calendarGrid.innerHTML = '';
+                eventListEl.innerHTML = '<p class="text-gray-500">Select a date to see events.</p>';
+                eventDateDisplay.textContent = '';
+
+                currentMonthYear.textContent = `${getMonthName(currentMonth)} ${currentYear}`;
+
+                const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+                const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
+
+                // Add empty cells for the days before the 1st
+                for (let i = 0; i < firstDay; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.classList.add('p-2');
+                    calendarGrid.appendChild(emptyCell);
+                }
+
+                // Add cells for each day of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('p-2', 'rounded-xl', 'cursor-pointer', 'flex', 'flex-col', 'items-center', 'justify-center', 'transition-all', 'duration-200');
+
+                    // Check if the current day has events
+                    const cellDate = new Date(currentYear, currentMonth, day);
+                    const hasEvents = events.some(event =>
+                        event.date.getFullYear() === cellDate.getFullYear() &&
+                        event.date.getMonth() === cellDate.getMonth() &&
+                        event.date.getDate() === cellDate.getDate()
+                    );
+
+                    // Add classes for styling
+                    if (hasEvents) {
+                        cell.classList.add('bg-indigo-200', 'text-indigo-800', 'font-semibold', 'hover:bg-indigo-300', 'shadow');
+                    } else {
+                        cell.classList.add('hover:bg-gray-100', 'text-gray-700');
+                    }
+
+                    // Highlight today's date
+                    if (cellDate.toDateString() === today.toDateString()) {
+                        cell.classList.add('bg-indigo-600', 'text-white', 'font-bold', 'hover:bg-indigo-700', 'shadow-lg');
+                    }
+
+                    // Add the day number
+                    const dayNumber = document.createElement('span');
+                    dayNumber.textContent = day;
+                    dayNumber.classList.add('text-lg');
+                    cell.appendChild(dayNumber);
+
+                    // Add a dot if there are events
+                    if (hasEvents) {
+                        const eventDot = document.createElement('span');
+                        eventDot.classList.add('w-1.5', 'h-1.5', 'bg-indigo-800', 'rounded-full', 'mt-1');
+                        if (cellDate.toDateString() === today.toDateString()) {
+                            eventDot.classList.remove('bg-indigo-800');
+                            eventDot.classList.add('bg-white');
+                        }
+                        cell.appendChild(eventDot);
+                    }
+
+                    // Add event listener to show events on click
+                    cell.addEventListener('click', () => showEventsForDate(day));
+                    calendarGrid.appendChild(cell);
+                }
+            };
+
+            const showEventsForDate = (day) => {
+                eventListEl.innerHTML = '';
+                const selectedDate = new Date(currentYear, currentMonth, day);
+                eventDateDisplay.textContent = `${getDayName(day)}, ${day} ${getMonthName(currentMonth)} ${currentYear}`;
+
+                const eventsForDay = events.filter(event =>
+                    event.date.getFullYear() === selectedDate.getFullYear() &&
+                    event.date.getMonth() === selectedDate.getMonth() &&
+                    event.date.getDate() === selectedDate.getDate()
+                );
+
+                if (eventsForDay.length === 0) {
+                    eventListEl.innerHTML = '<p class="text-gray-500">No events on this day.</p>';
+                } else {
+                    const ul = document.createElement('ul');
+                    ul.classList.add('space-y-3');
+                    eventsForDay.forEach(e => {
+                        const li = document.createElement('li');
+                        li.classList.add('p-3', 'bg-white', 'rounded-lg', 'shadow-md', 'text-gray-700');
+                        li.textContent = e.event;
+                        ul.appendChild(li);
+                    });
+                    eventListEl.appendChild(ul);
+                }
+            };
+
+            /**
+             * This function generates a printable version of the calendar by
+             * creating a new HTML document in memory and building the DOM with
+             * new elements. This method is highly robust and avoids any
+             * syntax errors caused by special characters in the event data.
+             */
+            const generatePrintView = () => {
+                const printWindow = window.open('', '_blank');
+                const monthTitle = getMonthName(currentMonth) + ' ' + currentYear;
+                const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+                const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
+
+                const printDocument = document.implementation.createHTMLDocument(monthTitle + ' Calendar');
+
+                const style = printDocument.createElement('style');
+                style.textContent = `
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+                    body { font-family: 'Inter', sans-serif; padding: 2rem; }
+                    .print-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; }
+                    .event-list { list-style: none; margin: 0; padding: 0; }
+                    .event-list li { margin-bottom: 0.2rem; }
+                    h1, h2, h3 { text-align: center; }
+                `;
+                printDocument.head.appendChild(style);
+
+                const tailwindScript = printDocument.createElement('script');
+                tailwindScript.src = 'https://cdn.tailwindcss.com';
+                printDocument.head.appendChild(tailwindScript);
+
+                const container = printDocument.createElement('div');
+                container.className = 'max-w-4xl mx-auto';
+
+                const h1 = printDocument.createElement('h1');
+                h1.className = 'text-3xl font-bold text-center mb-2';
+                h1.textContent = 'Portlaoise College';
+                container.appendChild(h1);
+
+                const h2 = printDocument.createElement('h2');
+                h2.className = 'text-xl font-semibold text-center mb-8';
+                h2.textContent = `${monthTitle} School Calendar`;
+                container.appendChild(h2);
+
+                const dayHeaders = printDocument.createElement('div');
+                dayHeaders.className = 'grid grid-cols-7 text-center font-medium text-gray-500 mb-2';
+                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+                    const div = printDocument.createElement('div');
+                    div.className = 'p-2';
+                    div.textContent = day;
+                    dayHeaders.appendChild(div);
+                });
+                container.appendChild(dayHeaders);
+
+                const calendarGridPrint = printDocument.createElement('div');
+                calendarGridPrint.className = 'print-grid';
+
+                for (let i = 0; i < firstDay; i++) {
+                    const emptyCell = printDocument.createElement('div');
+                    emptyCell.className = 'p-2';
+                    calendarGridPrint.appendChild(emptyCell);
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const cell = printDocument.createElement('div');
+                    cell.className = 'p-2 border border-gray-200 rounded-lg min-h-[80px]';
+
+                    const dayNumber = printDocument.createElement('div');
+                    dayNumber.className = 'text-base font-semibold mb-1';
+                    dayNumber.textContent = day;
+                    cell.appendChild(dayNumber);
+
+                    const cellDate = new Date(currentYear, currentMonth, day);
+                    const eventsForDay = events.filter(event =>
+                        event.date.getFullYear() === cellDate.getFullYear() &&
+                        event.date.getMonth() === cellDate.getMonth() &&
+                        event.date.getDate() === cellDate.getDate()
+                    );
+
+                    if (eventsForDay.length > 0) {
+                        const eventListUl = printDocument.createElement('ul');
+                        eventListUl.className = 'event-list mt-1';
+                        eventsForDay.forEach(e => {
+                            const li = printDocument.createElement('li');
+                            li.className = 'text-xs text-gray-700';
+                            li.textContent = e.event;
+                            eventListUl.appendChild(li);
+                        });
+                        cell.appendChild(eventListUl);
+                    }
+                    calendarGridPrint.appendChild(cell);
+                }
+
+                container.appendChild(calendarGridPrint);
+                printDocument.body.appendChild(container);
+
+                printWindow.document.write(printDocument.documentElement.outerHTML);
+                printWindow.document.close();
+                printWindow.print();
+            };
+
+            // --- Event Listeners for Navigation ---
+            prevMonthBtn.addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                renderCalendar();
+            });
+
+            nextMonthBtn.addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                renderCalendar();
+            });
+
+            printBtn.addEventListener('click', generatePrintView);
+
+            // Initial render
+            renderCalendar();
+        });
+    </script>
+</body>
+</html>
+
